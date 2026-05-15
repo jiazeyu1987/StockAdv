@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>股票分析报告</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    /* 多空分歧 */
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #666;
+      margin-bottom: 16px;
+      padding-left: 8px;
+    }
+    
+    .bull-bear-section {
+      margin-bottom: 24px;
+    }
+    
+    .bull-bear-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    
+    .bull-card, .bear-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #e8e8e8;
+    }
+    
+    .bull-card {
+      border-left: 4px solid #52c41a;
+    }
+    
+    .bear-card {
+      border-left: 4px solid #ff4d4f;
+    }
+    
+    .card-header {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    
+    .bull-card .card-header {
+      color: #52c41a;
+    }
+    
+    .bear-card .card-header {
+      color: #ff4d4f;
+    }
+    
+    .point-item {
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .point-item:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    
+    .point-title {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    
+    .point-desc {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    /* 综合评级 */
+    .summary-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 16px;
+      border: 1px solid #e8e8e8;
+    }
+    
+    .summary-rating {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 16px;
+    }
+    
+    .summary-rating .rating-level {
+      color: #52c41a;
+    }
+    
+    .summary-rating .rating-score {
+      color: #fa8c16;
+    }
+    
+    .summary-text {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    
+    .summary-text strong {
+      color: #333;
+    }
+    
+    /* Agent评分 */
+    .agent-section {
+      margin-bottom: 24px;
+    }
+    
+    .agent-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    
+    .agent-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #e8e8e8;
+    }
+    
+    .agent-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    
+    .agent-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .agent-score {
+      font-size: 28px;
+      font-weight: 700;
+    }
+    
+    .agent-card:nth-child(1) .agent-score {
+      color: #ff7a45;
+    }
+    
+    .agent-card:nth-child(2) .agent-score {
+      color: #52c41a;
+    }
+    
+    .agent-card:nth-child(3) .agent-score {
+      color: #722ed1;
+    }
+    
+    .metric-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .metric-label {
+      width: 80px;
+      font-size: 14px;
+      color: #666;
+    }
+    
+    .metric-bar {
+      flex: 1;
+      height: 8px;
+      background: #f0f0f0;
+      border-radius: 4px;
+      margin: 0 12px;
+      overflow: hidden;
+    }
+    
+    .metric-fill {
+      height: 100%;
+      border-radius: 4px;
+    }
+    
+    .agent-card:nth-child(1) .metric-fill {
+      background: linear-gradient(90deg, #ff7a45, #ff9c6e);
+    }
+    
+    .agent-card:nth-child(2) .metric-fill {
+      background: linear-gradient(90deg, #52c41a, #73d13d);
+    }
+    
+    .agent-card:nth-child(3) .metric-fill {
+      background: linear-gradient(90deg, #722ed1, #b37feb);
+    }
+    
+    .metric-value {
+      width: 40px;
+      text-align: right;
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .agent-desc {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #f0f0f0;
+      font-size: 13px;
+      color: #666;
+      line-height: 1.8;
+    }
+    
+    /* 估值对比 */
+    .valuation-section {
+      margin-bottom: 24px;
+    }
+    
+    .valuation-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    
+    .valuation-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid #e8e8e8;
+    }
+    
+    .valuation-label {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 8px;
+    }
+    
+    .valuation-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    
+    .valuation-sub {
+      font-size: 12px;
+      color: #999;
+    }
+    
+    /* 财务指标 */
+    .financial-section {
+      margin-bottom: 24px;
+    }
+    
+    .financial-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .financial-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #e8e8e8;
+    }
+    
+    .financial-label {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 8px;
+    }
+    
+    .financial-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    
+    .financial-change {
+      font-size: 12px;
+      color: #52c41a;
+    }
+    
+    .financial-change.negative {
+      color: #ff4d4f;
+    }
+    
+    /* 净利润趋势 */
+    .trend-section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid #e8e8e8;
+    }
+    
+    .trend-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 16px;
+    }
+    
+    .trend-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .trend-year {
+      width: 60px;
+      font-size: 14px;
+      color: #666;
+    }
+    
+    .trend-bar-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .trend-bar {
+      height: 24px;
+      background: linear-gradient(90deg, #52c41a, #73d13d);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 8px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      min-width: 60px;
+    }
+    
+    .trend-bar.predicted {
+      background: linear-gradient(90deg, #1890ff, #69c0ff);
+    }
+    
+    .trend-change {
+      font-size: 13px;
+      color: #52c41a;
+      font-weight: 500;
+    }
+    
+    /* 业务板块 */
+    .business-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .business-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #e8e8e8;
+    }
+    
+    .business-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 16px;
+    }
+    
+    .business-metric {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .business-metric-label {
+      width: 100px;
+      font-size: 13px;
+      color: #666;
+    }
+    
+    .business-metric-bar {
+      flex: 1;
+      height: 6px;
+      background: #f0f0f0;
+      border-radius: 3px;
+      margin: 0 12px;
+      overflow: hidden;
+    }
+    
+    .business-metric-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff7a45, #ff9c6e);
+      border-radius: 3px;
+    }
+    
+    .business-metric-value {
+      width: 80px;
+      text-align: right;
+      font-size: 13px;
+    }
+    
+    .business-metric-value .value {
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .business-metric-value .change {
+      font-size: 11px;
+      color: #52c41a;
+    }
+    
+    .business-desc {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #f0f0f0;
+      font-size: 12px;
+      color: #666;
+      line-height: 1.6;
+    }
+    
+    /* 宏观Agent */
+    .macro-section {
+      margin-bottom: 24px;
+    }
+    
+    .macro-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .macro-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #e8e8e8;
+    }
+    
+    .macro-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .macro-tag {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .macro-tag.neutral {
+      background: #fff7e6;
+      color: #fa8c16;
+    }
+    
+    .macro-tag.loose {
+      background: #f6ffed;
+      color: #52c41a;
+    }
+    
+    .macro-tag.risk {
+      background: #fff2f0;
+      color: #ff4d4f;
+    }
+    
+    .macro-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .macro-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    .macro-item {
+      padding: 4px 10px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .macro-summary {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #e8e8e8;
+    }
+    
+    .macro-summary-text {
+      font-size: 14px;
+      color: #333;
+      line-height: 1.8;
+    }
+    
+    .macro-summary-text strong {
+      color: #1890ff;
+    }
+    
+    /* 行业筛选 */
+    .industry-section {
+      margin-bottom: 24px;
+    }
+    
+    .industry-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    
+    .industry-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #e8e8e8;
+    }
+    
+    .industry-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .industry-tag {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    
+    .industry-tag.recommend {
+      background: #fff2f0;
+      color: #ff4d4f;
+    }
+    
+    .industry-tag.base {
+      background: #e6f7ff;
+      color: #1890ff;
+    }
+    
+    .industry-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .industry-desc {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 12px;
+    }
+    
+    .industry-metrics {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .industry-metric {
+      display: flex;
+      align-items: center;
+    }
+    
+    .industry-metric-label {
+      width: 60px;
+      font-size: 13px;
+      color: #666;
+    }
+    
+    .industry-metric-bar {
+      flex: 1;
+      height: 6px;
+      background: #f0f0f0;
+      border-radius: 3px;
+      margin: 0 12px;
+      overflow: hidden;
+    }
+    
+    .industry-metric-fill {
+      height: 100%;
+      border-radius: 3px;
+    }
+    
+    .industry-metric-fill.high {
+      background: #ff4d4f;
+    }
+    
+    .industry-metric-fill.medium {
+      background: #fa8c16;
+    }
+    
+    .industry-metric-value {
+      width: 30px;
+      text-align: right;
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    /* 响应式 */
+    @media (max-width: 768px) {
+      .bull-bear-grid,
+      .agent-grid,
+      .valuation-grid,
+      .financial-grid,
+      .business-section,
+      .macro-grid,
+      .industry-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 多空分歧 -->
+    <div class="bull-bear-section">
+      <div class="section-title">多空分歧</div>
+      <div class="bull-bear-grid">
+        <div class="bull-card">
+          <div class="card-header">多方核心逻辑</div>
+          <!-- 多方观点动态插入 -->
+        </div>
+        <div class="bear-card">
+          <div class="card-header">空方核心风险</div>
+          <!-- 空方观点动态插入 -->
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-rating">
+          综合评级：<span class="rating-level">{{RATING_LEVEL}}</span> / 总分 <span class="rating-score">{{RATING_SCORE}}</span>
+        </div>
+        <div class="summary-text">{{SUMMARY_TEXT}}</div>
+      </div>
+    </div>
+    
+    <!-- Agent评分 -->
+    <div class="agent-section">
+      <div class="section-title">三个 AGENT 评分</div>
+      <div class="agent-grid">
+        <!-- Agent卡片动态插入 -->
+      </div>
+    </div>
+    
+    <!-- 估值对比 -->
+    <div class="valuation-section">
+      <div class="section-title">估值对比（{{VALUATION_SUBTITLE}}）</div>
+      <div class="valuation-grid">
+        <!-- 估值卡片动态插入 -->
+      </div>
+    </div>
+    
+    <!-- 核心财务指标 -->
+    <div class="financial-section">
+      <div class="section-title">核心财务指标（{{FINANCIAL_PERIOD}}）</div>
+      <div class="financial-grid">
+        <!-- 财务卡片动态插入 -->
+      </div>
+      
+      <!-- 净利润趋势 -->
+      <div class="trend-section">
+        <div class="trend-title">净利润趋势（{{TREND_SUBTITLE}}）</div>
+        <!-- 趋势行动态插入 -->
+      </div>
+      
+      <!-- 业务板块 -->
+      <div class="business-section">
+        <!-- 业务卡片动态插入 -->
+      </div>
+    </div>
+    
+    <!-- 宏观Agent -->
+    <div class="macro-section">
+      <div class="section-title">第一层 · 宏观 AGENT 输出（{{MACRO_DATE}}）</div>
+      <div class="macro-grid">
+        <!-- 宏观卡片动态插入 -->
+      </div>
+      <div class="macro-summary">
+        <div class="macro-summary-text">{{MACRO_SUMMARY}}</div>
+      </div>
+    </div>
+    
+    <!-- 行业筛选 -->
+    <div class="industry-section">
+      <div class="section-title">第二层 · 行业筛选 AGENT 评分</div>
+      <div class="industry-grid">
+        <!-- 行业卡片动态插入 -->
+      </div>
+    </div>
+  </div>
+</body>
+</html>
