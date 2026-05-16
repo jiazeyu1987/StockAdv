@@ -11,3 +11,19 @@ test('development config serves localhost chat through the proxy contract', () =
   assert.deepEqual(proxy?.pathRewrite, { '^/api/proxy': '' });
   assert.equal(proxy?.changeOrigin, true);
 });
+
+test('development proxy target can be configured from the environment', () => {
+  const previous = process.env.STOCKADV_BACKEND_PROXY_TARGET;
+  process.env.STOCKADV_BACKEND_PROXY_TARGET = 'http://127.0.0.1:8088';
+
+  try {
+    const config = createConfig({}, { mode: 'development' });
+    assert.equal(config.devServer?.proxy?.['/api/proxy']?.target, 'http://127.0.0.1:8088');
+  } finally {
+    if (previous === undefined) {
+      delete process.env.STOCKADV_BACKEND_PROXY_TARGET;
+    } else {
+      process.env.STOCKADV_BACKEND_PROXY_TARGET = previous;
+    }
+  }
+});

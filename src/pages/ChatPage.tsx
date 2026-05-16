@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Download, Loader2, MessageSquare, FileText, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { BACKEND_API_BASE_URL, BACKEND_PROXY_ACCESS_TOKEN, BACKEND_SESSION_ID } from '../config/backend';
 
 interface Message {
   id: string;
@@ -11,10 +12,6 @@ interface Message {
   fileUrl?: string;
   fileName?: string;
 }
-
-const API_KEY = 'replace-with-proxy-access-token';
-const SESSION_ID = 'web-chat-session';
-const API_BASE_URL = '/api/proxy/v1';
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -39,7 +36,7 @@ export default function ChatPage() {
 
   const checkHealth = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL.replace('/v1', '')}/healthz`);
+      const response = await fetch(`${BACKEND_API_BASE_URL.replace(/\/v1\/?$/, '')}/healthz`);
       setIsConnected(response.status === 200);
     } catch {
       setIsConnected(false);
@@ -67,16 +64,16 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/chat/completions`, {
+      const response = await fetch(`${BACKEND_API_BASE_URL}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`,
+          'Authorization': `Bearer ${BACKEND_PROXY_ACCESS_TOKEN}`,
         },
         body: JSON.stringify({
           model: 'openclaw',
           messages: [{ role: 'user', content: userMessage.content }],
-          user: SESSION_ID,
+          user: BACKEND_SESSION_ID,
           stream: false,
           reasoning_effort: streamMode,
         }),
