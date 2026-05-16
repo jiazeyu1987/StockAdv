@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Download, Loader2, MessageSquare, FileText, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BACKEND_API_BASE_URL, BACKEND_PROXY_ACCESS_TOKEN, BACKEND_SESSION_ID } from '../config/backend';
+import MarkdownMessage from '../components/MarkdownMessage';
 
 interface Message {
   id: string;
@@ -306,7 +307,11 @@ export default function ChatPage() {
                       : 'bg-white dark:bg-slate-700 shadow-sm border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-200'
                   }`}
                 >
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
+                  {message.role === 'assistant' ? (
+                    <MarkdownMessage content={message.content} />
+                  ) : (
+                    <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
+                  )}
                   {message.hasFile && message.fileUrl && (
                     <button
                       onClick={() => downloadFile(message.fileUrl!, message.fileName || 'document.docx')}

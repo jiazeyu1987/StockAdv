@@ -48,3 +48,125 @@ body {
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: #64748b;
 }
+
+.markdown-message {
+  overflow-wrap: anywhere;
+}
+
+.markdown-message > * + * {
+  margin-top: 0.65rem;
+}
+
+.markdown-message p {
+  margin: 0;
+}
+
+.markdown-message strong {
+  font-weight: 700;
+}
+
+.markdown-message em {
+  font-style: italic;
+}
+
+.markdown-message ul,
+.markdown-message ol {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.markdown-message ul {
+  list-style: disc;
+}
+
+.markdown-message ol {
+  list-style: decimal;
+}
+
+.markdown-message li + li {
+  margin-top: 0.25rem;
+}
+
+.markdown-message a {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.dark .markdown-message a,
+[data-theme='dark'] .markdown-message a {
+  color: #60a5fa;
+}
+
+.markdown-message blockquote {
+  margin: 0;
+  padding-left: 0.85rem;
+  border-left: 3px solid #cbd5e1;
+  color: #475569;
+}
+
+.dark .markdown-message blockquote,
+[data-theme='dark'] .markdown-message blockquote {
+  border-left-color: #64748b;
+  color: #cbd5e1;
+}
+
+.markdown-message code {
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.3rem;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-size: 0.9em;
+}
+
+.dark .markdown-message code,
+[data-theme='dark'] .markdown-message code {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.markdown-message pre {
+  overflow-x: auto;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.markdown-message pre code {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.markdown-message table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.markdown-message th,
+.markdown-message td {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #cbd5e1;
+  text-align: left;
+}
+
+.markdown-message th {
+  background: #f1f5f9;
+  font-weight: 700;
+}
+
+.dark .markdown-message th,
+[data-theme='dark'] .markdown-message th {
+  background: #1e293b;
+}
+
+.dark .markdown-message th,
+.dark .markdown-message td,
+[data-theme='dark'] .markdown-message th,
+[data-theme='dark'] .markdown-message td {
+  border-color: #475569;
+}

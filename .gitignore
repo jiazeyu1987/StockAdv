@@ -102,3 +102,4 @@ obj/
 .stats
 .config
 .accesslog
+/docs
