@@ -233,6 +233,11 @@ sudo systemctl enable --now stockadv-frontend
 sudo systemctl status stockadv-frontend
 ```
 
+To stop the servie:
+```bash
+sudo systemctl stop stockadv-frontend
+```
+
 View logs:
 
 ```bash
@@ -374,6 +379,21 @@ corepack.cmd pnpm build
 ```
 
 Known build note: Webpack currently reports a bundle-size performance warning for `bundle.js`; the production build still succeeds.
+
+## Accounts saved in repo:
+
+```powershell
+user0  75378416  unlimited
+user1  42151509  10/day
+user2  01671631  10/day
+user3  49811656  10/day
+user4  29090108  10/day
+user5  73684583  10/day
+user6  25800699  10/day
+user7  70779252  10/day
+user8  19011141  10/day
+user9  38433209  10/day
+```
 
 ## Verified Locally
 
