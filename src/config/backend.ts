@@ -9,12 +9,24 @@ type RuntimeBackendConfig = {
 };
 
 const runtimeConfig = ((window as any).STOCKADV_CONFIG?.backend || {}) as RuntimeBackendConfig;
+const injectedBackendApiBaseUrl =
+  typeof __STOCKADV_BACKEND_API_BASE_URL__ !== 'undefined'
+    ? __STOCKADV_BACKEND_API_BASE_URL__
+    : undefined;
+const injectedProxyAccessToken =
+  typeof __STOCKADV_PROXY_ACCESS_TOKEN__ !== 'undefined'
+    ? __STOCKADV_PROXY_ACCESS_TOKEN__
+    : undefined;
+const injectedSessionId =
+  typeof __STOCKADV_SESSION_ID__ !== 'undefined'
+    ? __STOCKADV_SESSION_ID__
+    : undefined;
 
 export const BACKEND_API_BASE_URL =
-  runtimeConfig.apiBaseUrl || __STOCKADV_BACKEND_API_BASE_URL__ || '/api/proxy/v1';
+  runtimeConfig.apiBaseUrl || injectedBackendApiBaseUrl || '/api/proxy/v1';
 
 export const BACKEND_PROXY_ACCESS_TOKEN =
-  runtimeConfig.proxyAccessToken || __STOCKADV_PROXY_ACCESS_TOKEN__ || 'replace-with-proxy-access-token';
+  runtimeConfig.proxyAccessToken || injectedProxyAccessToken || 'replace-with-proxy-access-token';
 
 export const BACKEND_SESSION_ID =
-  runtimeConfig.sessionId || __STOCKADV_SESSION_ID__ || 'web-chat-session';
+  runtimeConfig.sessionId || injectedSessionId || 'web-chat-session';
