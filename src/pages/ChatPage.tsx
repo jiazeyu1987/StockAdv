@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Download, Loader2, MessageSquare, FileText, Trash2 } from 'lucide-react';
+import { Send, Download, Loader2, MessageSquare, FileText, Trash2, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatInputPrompt } from '../data/chatInputPrompt';
 import { investmentDisclaimer } from '../data/disclaimerText';
 import questionCards from '../data/questionCards.json';
 import { chatTheme } from '../styles/chatTheme';
+import { useNavigate } from 'react-router-dom';
 
 interface Message {
   id: string;
@@ -21,6 +22,7 @@ const SESSION_ID = 'web-chat-session';
 const API_BASE_URL = '/api/proxy/v1';
 
 export default function ChatPage() {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -180,6 +182,13 @@ export default function ChatPage() {
       <div className={chatTheme.workspace}>
         <header className={chatTheme.header}>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className={chatTheme.backButton}
+              title="返回上一页"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
             <div className={chatTheme.brandIcon}>
               <MessageSquare className="w-5 h-5 text-white" />
             </div>
@@ -221,11 +230,8 @@ export default function ChatPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center py-10"
+              className="pt-2"
             >
-              <div className={chatTheme.emptyIconWrap}>
-                <MessageSquare className={chatTheme.emptyIcon} />
-              </div>
               <div className={chatTheme.starterGrid}>
                 {questionCards.map((card, index) => (
                   <div

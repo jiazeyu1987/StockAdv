@@ -336,11 +336,8 @@ function App() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center py-10"
+              className="pt-2"
             >
-              <div className={chatTheme.emptyIconWrap}>
-                <MessageSquare className={chatTheme.emptyIcon} />
-              </div>
               <div className={chatTheme.starterGrid}>
                 {questionCards.map((card, index) => (
                   <div
