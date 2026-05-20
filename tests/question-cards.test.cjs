@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const expectedDisclaimer = '免责声明：本助手工具仅为用户提供公开信息的查询和整理服务，所提供的所有信息均来源于公开渠道，仅供参考。用户应自行判断信息的真实性和适用性，并承担因使用本助手所提供信息而产生的一切风险和后果。本助手及其运营方不对任何投资决策、商业行为或其他用途承担任何法律责任，所有信息不构成任何形式的投资建议。';
+const expectedChatInputPrompt = '除了以上10个问题，您也可以针对您感兴趣的各种不同方向问题给我提问。今后，我会越用越聪明！';
 
 const expectedCards = [
   {
@@ -108,4 +109,19 @@ test('all visible disclaimers reuse the updated legal copy', () => {
   assert.match(appSource, /investmentDisclaimer/);
   assert.match(chatPageSource, /investmentDisclaimer/);
   assert.match(howToAskSource, /investmentDisclaimer/);
+});
+
+test('starter-question chat pages reuse the updated input prompt copy', () => {
+  const promptPath = path.join(__dirname, '../src/data/chatInputPrompt.ts');
+  assert.ok(fs.existsSync(promptPath), 'missing shared chat input prompt source');
+
+  const promptSource = fs.readFileSync(promptPath, 'utf8');
+  const appSource = fs.readFileSync(path.join(__dirname, '../src/App.tsx'), 'utf8');
+  const chatPageSource = fs.readFileSync(path.join(__dirname, '../src/pages/ChatPage.tsx'), 'utf8');
+
+  assert.match(promptSource, new RegExp(expectedChatInputPrompt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(appSource, /from '\.\/data\/chatInputPrompt'/);
+  assert.match(chatPageSource, /from '\.\.\/data\/chatInputPrompt'/);
+  assert.match(appSource, /chatInputPrompt/);
+  assert.match(chatPageSource, /chatInputPrompt/);
 });

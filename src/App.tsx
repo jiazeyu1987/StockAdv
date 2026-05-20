@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Download, Loader2, MessageSquare, FileText, Trash2, TrendingUp, Shield, HeartPulse, Target, BarChart3, User, Lock, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { chatInputPrompt } from './data/chatInputPrompt';
 import { investmentDisclaimer } from './data/disclaimerText';
 import questionCards from './data/questionCards.json';
 import { chatTheme } from './styles/chatTheme';
@@ -441,7 +442,7 @@ function App() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="输入你的问题..."
+                  placeholder={chatInputPrompt}
                   rows={3}
                   className={chatTheme.textarea}
                   style={{ minHeight: '80px', maxHeight: '150px' }}
