@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Download, Loader2, MessageSquare, FileText, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { investmentDisclaimer } from '../data/disclaimerText';
 import questionCards from '../data/questionCards.json';
 import { chatTheme } from '../styles/chatTheme';
 
@@ -183,7 +184,7 @@ export default function ChatPage() {
             </div>
             <div>
               <h1 className={chatTheme.title}>PD股票智能查询助手</h1>
-              <p className={chatTheme.subtitle}>免责声明: 本助手只为协助用户获取公开信息，仅供参考，不构成投资建议</p>
+              <p className={chatTheme.subtitle}>{investmentDisclaimer}</p>
               <div className="flex items-center gap-2 mt-1">
                 <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`} />
                 <span className={chatTheme.statusText}>

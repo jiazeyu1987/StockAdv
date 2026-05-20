@@ -4,7 +4,7 @@ export const chatTheme = {
   header: 'bg-white/10 backdrop-blur-md border-b border-white/10 px-6 py-4 flex items-center justify-between',
   brandIcon: 'w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-950/40',
   title: 'text-lg font-semibold text-white',
-  subtitle: 'text-xs text-white/60',
+  subtitle: 'text-xs text-white/60 leading-relaxed max-w-3xl',
   statusText: 'text-xs text-white/60',
   contentArea: 'flex-1 overflow-y-auto p-6 space-y-4',
   emptyIconWrap: 'w-20 h-20 bg-white/10 border border-white/10 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-slate-950/30',

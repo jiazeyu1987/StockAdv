@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Search, Target, Calculator, HeartPulse, Shield, TrendingUp, Globe, Users, AlertTriangle, Scale, Clock, Briefcase, Sparkles, ShieldCheck, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { investmentDisclaimer } from '../data/disclaimerText';
 
 const questionTypes = [
   { id: 1, category: '全面评估类', icon: Target, question: '用价值投资方法全面分析[股票名称]的投资价值' },
@@ -96,7 +97,7 @@ const HowToAskAI: React.FC = () => {
                 股票投研智能助手是一款基于人工智能技术的专业股票分析工具。我们致力于帮助投资者深入理解企业内在价值，通过量化评估、安全边际计算、财务健康诊断等多维度分析，为用户提供科学、客观的投资决策支持。
               </p>
               <p className="text-slate-400 text-sm leading-relaxed border-t border-slate-600/30 pt-3">
-                免责声明：本工具提供的分析结果仅供参考，不构成投资建议。投资有风险，入市需谨慎。用户应根据自身情况独立做出投资决策，并承担相应风险。
+                {investmentDisclaimer}
               </p>
             </div>
           </div>

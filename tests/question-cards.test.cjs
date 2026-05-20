@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
+const expectedDisclaimer = '免责声明：本助手工具仅为用户提供公开信息的查询和整理服务，所提供的所有信息均来源于公开渠道，仅供参考。用户应自行判断信息的真实性和适用性，并承担因使用本助手所提供信息而产生的一切风险和后果。本助手及其运营方不对任何投资决策、商业行为或其他用途承担任何法律责任，所有信息不构成任何形式的投资建议。';
+
 const expectedCards = [
   {
     title: '查核心生意与护城河（综合体检）',
@@ -88,4 +90,22 @@ test('home and ask pages share the same dark chat theme', () => {
   assert.match(chatPageSource, /chatTheme\.starterCard/);
   assert.match(appSource, /chatTheme\.inputShell/);
   assert.match(chatPageSource, /chatTheme\.inputShell/);
+});
+
+test('all visible disclaimers reuse the updated legal copy', () => {
+  const disclaimerPath = path.join(__dirname, '../src/data/disclaimerText.ts');
+  assert.ok(fs.existsSync(disclaimerPath), 'missing shared disclaimer copy source');
+
+  const disclaimerSource = fs.readFileSync(disclaimerPath, 'utf8');
+  const appSource = fs.readFileSync(path.join(__dirname, '../src/App.tsx'), 'utf8');
+  const chatPageSource = fs.readFileSync(path.join(__dirname, '../src/pages/ChatPage.tsx'), 'utf8');
+  const howToAskSource = fs.readFileSync(path.join(__dirname, '../src/components/HowToAskAI.tsx'), 'utf8');
+
+  assert.match(disclaimerSource, new RegExp(expectedDisclaimer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(appSource, /from '\.\/data\/disclaimerText'/);
+  assert.match(chatPageSource, /from '\.\.\/data\/disclaimerText'/);
+  assert.match(howToAskSource, /from '\.\.\/data\/disclaimerText'/);
+  assert.match(appSource, /investmentDisclaimer/);
+  assert.match(chatPageSource, /investmentDisclaimer/);
+  assert.match(howToAskSource, /investmentDisclaimer/);
 });
