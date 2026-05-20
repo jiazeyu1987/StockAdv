@@ -6,6 +6,8 @@ import { investmentDisclaimer } from '../data/disclaimerText';
 import questionCards from '../data/questionCards.json';
 import { chatTheme } from '../styles/chatTheme';
 import { useNavigate } from 'react-router-dom';
+import { BACKEND_API_BASE_URL, BACKEND_PROXY_ACCESS_TOKEN, BACKEND_SESSION_ID } from '../config/backend';
+import MarkdownMessage from '../components/MarkdownMessage';
 
 interface Message {
   id: string;
@@ -16,10 +18,6 @@ interface Message {
   fileUrl?: string;
   fileName?: string;
 }
-
-const API_KEY = 'replace-with-proxy-access-token';
-const SESSION_ID = 'web-chat-session';
-const API_BASE_URL = '/api/proxy/v1';
 
 export default function ChatPage() {
   const navigate = useNavigate();
@@ -45,7 +43,7 @@ export default function ChatPage() {
 
   const checkHealth = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL.replace('/v1', '')}/healthz`);
+      const response = await fetch(`${BACKEND_API_BASE_URL.replace(/\/v1\/?$/, '')}/healthz`);
       setIsConnected(response.status === 200);
     } catch {
       setIsConnected(false);
@@ -73,16 +71,16 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/chat/completions`, {
+      const response = await fetch(`${BACKEND_API_BASE_URL}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`,
+          'Authorization': `Bearer ${BACKEND_PROXY_ACCESS_TOKEN}`,
         },
         body: JSON.stringify({
           model: 'openclaw',
           messages: [{ role: 'user', content: userMessage.content }],
-          user: SESSION_ID,
+          user: BACKEND_SESSION_ID,
           stream: false,
           reasoning_effort: streamMode,
         }),
@@ -270,7 +268,11 @@ export default function ChatPage() {
                       : chatTheme.assistantBubble
                   }`}
                 >
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
+                  {message.role === 'assistant' ? (
+                    <MarkdownMessage content={message.content} />
+                  ) : (
+                    <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
+                  )}
                   {message.hasFile && message.fileUrl && (
                     <button
                       onClick={() => downloadFile(message.fileUrl!, message.fileName || 'document.docx')}

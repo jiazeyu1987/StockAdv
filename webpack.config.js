@@ -1,8 +1,13 @@
 const path = require('path');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = (env, argv) => {
   const isDev = argv.mode !== 'production';
+  const backendProxyTarget = process.env.STOCKADV_BACKEND_PROXY_TARGET || 'http://34.45.206.120:8088';
+  const backendApiBaseUrl = process.env.STOCKADV_BACKEND_API_BASE_URL || '/api/proxy/v1';
+  const backendProxyAccessToken = process.env.STOCKADV_PROXY_ACCESS_TOKEN || 'replace-with-proxy-access-token';
+  const backendSessionId = process.env.STOCKADV_SESSION_ID || 'web-chat-session';
 
   return {
     mode: isDev ? 'development' : 'production',
@@ -76,7 +81,7 @@ module.exports = (env, argv) => {
       },
       proxy: {
         '/api/proxy': {
-          target: 'http://34.45.206.120:8088',
+          target: backendProxyTarget,
           pathRewrite: { '^/api/proxy': '' },
           changeOrigin: true,
           secure: false
@@ -84,6 +89,11 @@ module.exports = (env, argv) => {
       }
     },
     plugins: [
+      new webpack.DefinePlugin({
+        __STOCKADV_BACKEND_API_BASE_URL__: JSON.stringify(backendApiBaseUrl),
+        __STOCKADV_PROXY_ACCESS_TOKEN__: JSON.stringify(backendProxyAccessToken),
+        __STOCKADV_SESSION_ID__: JSON.stringify(backendSessionId),
+      }),
       new HtmlWebpackPlugin({
         template: './index.html',
         inject: 'body'

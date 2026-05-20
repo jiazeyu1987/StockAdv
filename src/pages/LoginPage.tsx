@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, Shield, HeartPulse, Target, LineChart, Wallet, User, Lock } from 'lucide-react';
+import { authenticateUser } from '../config/accounts';
 
 interface LoginPageProps {
   onLogin: () => void;
@@ -18,9 +19,16 @@ const features = [
 export default function LoginPage({ onLogin }: LoginPageProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!authenticateUser(username, password)) {
+      setLoginError('用户名或密码不正确');
+      return;
+    }
+    setLoginError('');
+    setPassword('');
     onLogin();
   };
 
@@ -86,10 +94,12 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="测试版，免密登录"
+                placeholder="密码"
                 className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:border-cyan-400"
               />
             </div>
+
+            {loginError && <p className="text-sm text-red-300">{loginError}</p>}
 
             <button
               type="submit"

@@ -5,6 +5,16 @@ import { chatInputPrompt } from './data/chatInputPrompt';
 import { investmentDisclaimer } from './data/disclaimerText';
 import questionCards from './data/questionCards.json';
 import { chatTheme } from './styles/chatTheme';
+import { BACKEND_API_BASE_URL, BACKEND_PROXY_ACCESS_TOKEN, BACKEND_SESSION_ID } from './config/backend';
+import MarkdownMessage from './components/MarkdownMessage';
+import {
+  authenticateUser,
+  canUseQuery,
+  getQueryUsage,
+  recordQuery,
+  type QueryUsage,
+  type UserAccount,
+} from './config/accounts';
 
 interface Message {
   id: string;
@@ -16,10 +26,6 @@ interface Message {
   fileName?: string;
 }
 
-const API_KEY = 'replace-with-proxy-access-token';
-const SESSION_ID = 'web-chat-session';
-const API_BASE_URL = '/api/proxy/v1';
-
 function App() {
   const [currentView, setCurrentView] = useState<'login' | 'chat'>('login');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -29,6 +35,9 @@ function App() {
   const [streamMode, setStreamMode] = useState<'off' | 'minimal' | 'low' | 'medium' | 'high'>('medium');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [authenticatedUser, setAuthenticatedUser] = useState<UserAccount | null>(null);
+  const [queryUsage, setQueryUsage] = useState<QueryUsage | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -48,7 +57,7 @@ function App() {
 
   const checkHealth = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL.replace('/v1', '')}/healthz`);
+      const response = await fetch(`${BACKEND_API_BASE_URL.replace(/\/v1\/?$/, '')}/healthz`);
       setIsConnected(response.status === 200);
     } catch {
       setIsConnected(false);
@@ -57,11 +66,40 @@ function App() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    const account = authenticateUser(username, password);
+    if (!account) {
+      setLoginError('用户名或密码不正确');
+      return;
+    }
+
+    setAuthenticatedUser(account);
+    setQueryUsage(getQueryUsage(account));
+    setLoginError('');
+    setPassword('');
     setCurrentView('chat');
   };
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
+    if (!authenticatedUser) {
+      setLoginError('请先登录');
+      setCurrentView('login');
+      return;
+    }
+
+    if (!canUseQuery(authenticatedUser)) {
+      setQueryUsage(getQueryUsage(authenticatedUser));
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '今日查询次数已用完，请明天再试。',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+      return;
+    }
+
+    setQueryUsage(recordQuery(authenticatedUser));
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -81,16 +119,16 @@ function App() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/chat/completions`, {
+      const response = await fetch(`${BACKEND_API_BASE_URL}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`,
+          'Authorization': `Bearer ${BACKEND_PROXY_ACCESS_TOKEN}`,
         },
         body: JSON.stringify({
           model: 'openclaw',
           messages: [{ role: 'user', content: userMessage.content }],
-          user: SESSION_ID,
+          user: BACKEND_SESSION_ID,
           stream: false,
           reasoning_effort: streamMode,
         }),
@@ -151,6 +189,14 @@ function App() {
 
   const clearChat = () => {
     setMessages([]);
+  };
+
+  const logout = () => {
+    setAuthenticatedUser(null);
+    setQueryUsage(null);
+    setMessages([]);
+    setInput('');
+    setCurrentView('login');
   };
 
   const downloadFile = (url: string, filename: string) => {
@@ -258,10 +304,11 @@ function App() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="测试版，免密登录"
+                placeholder="密码"
                 className="w-full pl-9 pr-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-cyan-400 text-sm"
               />
             </div>
+            {loginError && <p className="text-xs text-red-300">{loginError}</p>}
             <button
               type="submit"
               className="w-full py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-medium hover:from-cyan-600 hover:to-blue-600 transition-all text-sm"
@@ -289,9 +336,9 @@ function App() {
         <header className={chatTheme.header}>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setCurrentView('login')}
+              onClick={logout}
               className={chatTheme.backButton}
-              title="返回首页"
+              title="退出登录"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -306,6 +353,11 @@ function App() {
                 <span className={chatTheme.statusText}>
                   {isConnected ? '服务正常' : '连接异常'}
                 </span>
+                {authenticatedUser && (
+                  <span className="text-xs text-white/60">
+                    {authenticatedUser.username} · {queryUsage?.limit === null ? '不限次数' : `今日剩余 ${queryUsage?.remaining ?? 0}/${queryUsage?.limit ?? 10}`}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -376,7 +428,11 @@ function App() {
                       : chatTheme.assistantBubble
                   }`}
                 >
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
+                  {message.role === 'assistant' ? (
+                    <MarkdownMessage content={message.content} />
+                  ) : (
+                    <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
+                  )}
                   {message.hasFile && message.fileUrl && (
                     <button
                       onClick={() => downloadFile(message.fileUrl!, message.fileName || 'document.docx')}
