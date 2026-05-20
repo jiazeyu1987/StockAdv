@@ -126,6 +126,16 @@ test('starter-question chat pages reuse the updated input prompt copy', () => {
   assert.match(chatPageSource, /chatInputPrompt/);
 });
 
+test('starter-question chat textarea uses black text through the shared theme', () => {
+  const themeSource = fs.readFileSync(path.join(__dirname, '../src/styles/chatTheme.ts'), 'utf8');
+  const appSource = fs.readFileSync(path.join(__dirname, '../src/App.tsx'), 'utf8');
+  const chatPageSource = fs.readFileSync(path.join(__dirname, '../src/pages/ChatPage.tsx'), 'utf8');
+
+  assert.match(themeSource, /textarea:.*text-black/);
+  assert.match(appSource, /className=\{chatTheme\.textarea\}/);
+  assert.match(chatPageSource, /className=\{chatTheme\.textarea\}/);
+});
+
 test('starter-question chat theme matches the reference-style palette and layout cues', () => {
   const themeSource = fs.readFileSync(path.join(__dirname, '../src/styles/chatTheme.ts'), 'utf8');
   const appSource = fs.readFileSync(path.join(__dirname, '../src/App.tsx'), 'utf8');

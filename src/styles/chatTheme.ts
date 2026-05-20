@@ -24,7 +24,7 @@ export const chatTheme = {
   streamLabel: 'text-xs text-white/62 font-medium',
   streamButtonActive: 'bg-[#4488ff] text-white shadow-[0_8px_16px_rgba(31,88,255,0.28)]',
   streamButtonIdle: 'bg-white/10 border border-white/10 text-white/78 hover:bg-white/16 transition-colors',
-  textarea: 'w-full px-4 py-4 pr-12 bg-[#566581]/72 border border-white/8 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#6aa7ff]/35 text-white placeholder:text-white/56',
+  textarea: 'w-full px-4 py-4 pr-12 bg-[#566581]/72 border border-white/8 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#6aa7ff]/35 text-black placeholder:text-black/55',
   primaryButton: 'min-w-[124px] justify-center px-6 py-4 bg-gradient-to-br from-[#4b6fff] to-[#4b3ed0] text-white rounded-2xl font-medium flex items-center gap-2 hover:from-[#5880ff] hover:to-[#5748df] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_16px_28px_rgba(35,46,139,0.34)]',
   downloadButton: 'px-4 py-2 bg-gradient-to-r from-[#4b76ff] to-[#4c46d9] text-white rounded-xl text-sm font-medium flex items-center gap-2 hover:from-[#5880ff] hover:to-[#5a4fe5] transition-all',
   clearButton: 'p-2 text-white/60 hover:text-red-400 transition-colors',
