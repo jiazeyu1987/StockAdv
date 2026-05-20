@@ -51,6 +51,7 @@ test('question cards are defined once and reused by both chat entry points', () 
   assert.ok(fs.existsSync(cardsPath), 'missing shared question card definitions');
 
   const cards = JSON.parse(fs.readFileSync(cardsPath, 'utf8'));
+  assert.equal(cards.length, 10);
   assert.deepEqual(cards, expectedCards);
 
   const appSource = fs.readFileSync(path.join(__dirname, '../src/App.tsx'), 'utf8');
@@ -62,4 +63,29 @@ test('question cards are defined once and reused by both chat entry points', () 
   assert.match(chatPageSource, /questionCards\.map\(/);
   assert.doesNotMatch(appSource, /A股\/港股快速查询/);
   assert.doesNotMatch(chatPageSource, /A股\/港股快速查询/);
+});
+
+test('home and ask pages share the same dark chat theme', () => {
+  const themePath = path.join(__dirname, '../src/styles/chatTheme.ts');
+  assert.ok(fs.existsSync(themePath), 'missing shared dark chat theme');
+
+  const themeSource = fs.readFileSync(themePath, 'utf8');
+  const appSource = fs.readFileSync(path.join(__dirname, '../src/App.tsx'), 'utf8');
+  const chatPageSource = fs.readFileSync(path.join(__dirname, '../src/pages/ChatPage.tsx'), 'utf8');
+
+  assert.match(themeSource, /pageShell:/);
+  assert.match(themeSource, /header:/);
+  assert.match(themeSource, /starterCard:/);
+  assert.match(themeSource, /assistantBubble:/);
+  assert.match(themeSource, /inputShell:/);
+  assert.match(themeSource, /textarea:/);
+
+  assert.match(appSource, /from '\.\/styles\/chatTheme'/);
+  assert.match(chatPageSource, /from '\.\.\/styles\/chatTheme'/);
+  assert.match(appSource, /chatTheme\.pageShell/);
+  assert.match(chatPageSource, /chatTheme\.pageShell/);
+  assert.match(appSource, /chatTheme\.starterCard/);
+  assert.match(chatPageSource, /chatTheme\.starterCard/);
+  assert.match(appSource, /chatTheme\.inputShell/);
+  assert.match(chatPageSource, /chatTheme\.inputShell/);
 });

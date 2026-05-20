@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Download, Loader2, MessageSquare, FileText, Trash2, TrendingUp, Shield, HeartPulse, Target, BarChart3, User, Lock, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import questionCards from './data/questionCards.json';
+import { chatTheme } from './styles/chatTheme';
 
 interface Message {
   id: string;
@@ -281,26 +282,26 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
-      <div className="max-w-4xl mx-auto h-screen flex flex-col">
-        <header className="bg-white/10 backdrop-blur-md border-b border-white/20 px-6 py-4 flex items-center justify-between">
+    <div className={chatTheme.pageShell}>
+      <div className={chatTheme.workspace}>
+        <header className={chatTheme.header}>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setCurrentView('login')}
-              className="p-2 text-white/60 hover:text-white transition-colors"
+              className={chatTheme.backButton}
               title="返回首页"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+            <div className={chatTheme.brandIcon}>
               <MessageSquare className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-white">PD股票智能查询助手</h1>
-              <p className="text-xs text-white/60">免责声明: 本助手只为协助用户获取公开信息，仅供参考，不构成投资建议</p>
+              <h1 className={chatTheme.title}>PD股票智能查询助手</h1>
+              <p className={chatTheme.subtitle}>免责声明: 本助手只为协助用户获取公开信息，仅供参考，不构成投资建议</p>
               <div className="flex items-center gap-2 mt-1">
                 <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`} />
-                <span className="text-xs text-white/60">
+                <span className={chatTheme.statusText}>
                   {isConnected ? '服务正常' : '连接异常'}
                 </span>
               </div>
@@ -310,7 +311,7 @@ function App() {
             {messages.length > 0 && (
               <button
                 onClick={downloadReport}
-                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:from-cyan-600 hover:to-blue-600 transition-all"
+                className={chatTheme.downloadButton}
               >
                 <Download className="w-4 h-4" />
                 <span>报告下载</span>
@@ -319,7 +320,7 @@ function App() {
             {messages.length > 0 && (
               <button
                 onClick={clearChat}
-                className="p-2 text-white/60 hover:text-red-400 transition-colors"
+                className={chatTheme.clearButton}
                 title="清空对话"
               >
                 <Trash2 className="w-5 h-5" />
@@ -328,27 +329,30 @@ function App() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className={chatTheme.contentArea}>
           {messages.length === 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="text-center py-10"
             >
-              <div className="max-w-3xl mx-auto space-y-4 text-left">
+              <div className={chatTheme.emptyIconWrap}>
+                <MessageSquare className={chatTheme.emptyIcon} />
+              </div>
+              <div className={chatTheme.starterGrid}>
                 {questionCards.map((card, index) => (
                   <div
                     key={card.title}
                     onClick={() => setInput(card.prompt)}
-                    className="bg-white dark:bg-slate-700 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-600 cursor-pointer hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all"
+                    className={chatTheme.starterCard}
                   >
-                    <h3 className="font-semibold text-slate-800 dark:text-white mb-3 flex items-start gap-2">
-                      <span className="w-6 h-6 shrink-0 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">
+                    <h3 className={chatTheme.starterCardTitle}>
+                      <span className={chatTheme.starterCardIndex}>
                         {index + 1}
                       </span>
                       <span>{card.title}</span>
                     </h3>
-                    <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-700 dark:text-slate-300">
+                    <div className={chatTheme.starterCardPrompt}>
                       {card.prompt}
                     </div>
                   </div>
@@ -369,22 +373,22 @@ function App() {
                 <div
                   className={`max-w-[80%] rounded-2xl px-5 py-3 ${
                     message.role === 'user'
-                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
-                      : 'bg-white dark:bg-slate-700 shadow-sm border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-200'
+                      ? chatTheme.userBubble
+                      : chatTheme.assistantBubble
                   }`}
                 >
                   <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
                   {message.hasFile && message.fileUrl && (
                     <button
                       onClick={() => downloadFile(message.fileUrl!, message.fileName || 'document.docx')}
-                      className="mt-3 flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors text-xs font-medium"
+                      className={chatTheme.attachmentButton}
                     >
                       <FileText className="w-4 h-4" />
                       <span>下载 {message.fileName || '文档'}</span>
                       <Download className="w-3 h-3" />
                     </button>
                   )}
-                  <div className={`text-xs mt-2 ${message.role === 'user' ? 'text-blue-100' : 'text-slate-400'}`}>
+                  <div className={`text-xs mt-2 ${message.role === 'user' ? 'text-cyan-100' : chatTheme.assistantTimestamp}`}>
                     {message.timestamp.toLocaleTimeString()}
                   </div>
                 </div>
@@ -398,10 +402,10 @@ function App() {
               animate={{ opacity: 1 }}
               className="flex justify-start"
             >
-              <div className="bg-white dark:bg-slate-700 rounded-2xl px-5 py-4 shadow-sm border border-slate-200 dark:border-slate-600">
+              <div className={chatTheme.loadingBubble}>
                 <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-                  <span className="text-sm text-slate-500 dark:text-slate-400">思考中...</span>
+                  <Loader2 className="w-4 h-4 text-cyan-300 animate-spin" />
+                  <span className={chatTheme.loadingText}>思考中...</span>
                 </div>
               </div>
             </motion.div>
@@ -409,10 +413,10 @@ function App() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-t border-slate-200 dark:border-slate-700 p-4">
+        <div className={chatTheme.inputShell}>
           <div className="max-w-4xl mx-auto flex flex-col gap-3">
             <div className="flex items-center gap-2 px-2">
-              <span className="text-xs text-slate-500 dark:text-slate-400">推理强度:</span>
+              <span className={chatTheme.streamLabel}>推理强度:</span>
               <div className="flex gap-1">
                 {(['off', 'minimal', 'low', 'medium', 'high'] as const).map((mode) => (
                   <button
@@ -420,8 +424,8 @@ function App() {
                     onClick={() => setStreamMode(mode)}
                     className={`px-2 py-1 text-xs rounded transition-colors ${
                       streamMode === mode
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'
+                        ? chatTheme.streamButtonActive
+                        : chatTheme.streamButtonIdle
                     }`}
                   >
                     {mode}
@@ -438,14 +442,14 @@ function App() {
                   onKeyDown={handleKeyDown}
                   placeholder="输入你的问题..."
                   rows={3}
-                  className="w-full px-4 py-3 pr-12 bg-slate-100 dark:bg-slate-700 border-0 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-white placeholder:text-slate-400"
+                  className={chatTheme.textarea}
                   style={{ minHeight: '80px', maxHeight: '150px' }}
                 />
               </div>
               <button
                 onClick={sendMessage}
                 disabled={!input.trim() || isLoading}
-                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium flex items-center gap-2 hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/25"
+                className={chatTheme.primaryButton}
               >
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 <span>发送</span>
