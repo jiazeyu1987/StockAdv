@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Download, Loader2, MessageSquare, FileText, Trash2, TrendingUp, Shield, HeartPulse, Target, BarChart3, User, Lock, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import questionCards from './data/questionCards.json';
 
 interface Message {
   id: string;
@@ -335,73 +336,23 @@ function App() {
               className="text-center py-10"
             >
               <div className="max-w-3xl mx-auto space-y-4 text-left">
-                <div
-                  onClick={() => setInput('请帮我拆解 [公司名称/代码] 的主营业务构成。它的各项业务毛利和经营利润率是多少？过去5年它的 ROIC（投入资本回报率）是否稳定在 10% 以上？')}
-                  className="bg-white dark:bg-slate-700 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-600 cursor-pointer hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all"
-                >
-                  <h3 className="font-semibold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">1</span>
-                    查核心生意与护城河
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">看它靠什么赚钱，赚的钱真不真</p>
-                  <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-700 dark:text-slate-300">
-                    请帮我拆解 [公司名称/代码] 的主营业务构成。它的各项业务毛利和经营利润率是多少？过去5年它的 ROIC（投入资本回报率）是否稳定在 10% 以上？
+                {questionCards.map((card, index) => (
+                  <div
+                    key={card.title}
+                    onClick={() => setInput(card.prompt)}
+                    className="bg-white dark:bg-slate-700 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-600 cursor-pointer hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all"
+                  >
+                    <h3 className="font-semibold text-slate-800 dark:text-white mb-3 flex items-start gap-2">
+                      <span className="w-6 h-6 shrink-0 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">
+                        {index + 1}
+                      </span>
+                      <span>{card.title}</span>
+                    </h3>
+                    <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-700 dark:text-slate-300">
+                      {card.prompt}
+                    </div>
                   </div>
-                </div>
-
-                <div
-                  onClick={() => setInput('帮我做一下 [公司名称/代码] 的财务压力测试。它的经营现金流和自由现金流健康吗？目前的长期债务能否用未来3年的自由现金流覆盖？有息负债率高不高？')}
-                  className="bg-white dark:bg-slate-700 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-600 cursor-pointer hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all"
-                >
-                  <h3 className="font-semibold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">2</span>
-                    查生存底线与自由现金流
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">看它会不会暴雷</p>
-                  <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-700 dark:text-slate-300">
-                    帮我做一下 [公司名称/代码] 的财务压力测试。它的经营现金流和自由现金流健康吗？目前的长期债务能否用未来3年的自由现金流覆盖？有息负债率高不高？
-                  </div>
-                </div>
-
-                <div
-                  onClick={() => setInput('[公司名称/代码] 过去4年和10年的营收、净利润、自由现金流的复合年增长率（CAGR）是否超过了10%？结合目前的 PE、PB 和 PEG，你认为它现在被低估了吗？')}
-                  className="bg-white dark:bg-slate-700 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-600 cursor-pointer hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all"
-                >
-                  <h3 className="font-semibold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">3</span>
-                    查长期复利与估值
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">看它便不便宜</p>
-                  <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-700 dark:text-slate-300">
-                    [公司名称/代码] 过去4年和10年的营收、净利润、自由现金流的复合年增长率（CAGR）是否超过了10%？结合目前的 PE、PB 和 PEG，你认为它现在被低估了吗？
-                  </div>
-                </div>
-
-                <div
-                  onClick={() => setInput('调用你的 cn-stock 数据工具，提取 [股票代码] 最近三年的核心财务指标（PE, PB, ROE, 净利润同比增长），并用价值投资的视角给我一段150字以内的点评。')}
-                  className="bg-white dark:bg-slate-700 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-600 cursor-pointer hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all"
-                >
-                  <h3 className="font-semibold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">4</span>
-                    A股/港股快速查询
-                  </h3>
-                  <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-700 dark:text-slate-300">
-                    调用你的 cn-stock 数据工具，提取 [股票代码] 最近三年的核心财务指标（PE, PB, ROE, 净利润同比增长），并用价值投资的视角给我一段150字以内的点评。
-                  </div>
-                </div>
-
-                <div
-                  onClick={() => setInput('分析 [股票代码]，根据巴芒和你的价值投资框架体系，帮我设计一组问题，并针对问题做一个分析报告')}
-                  className="bg-white dark:bg-slate-700 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-600 cursor-pointer hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all"
-                >
-                  <h3 className="font-semibold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">5</span>
-                    综合价值投资分析
-                  </h3>
-                  <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-700 dark:text-slate-300">
-                    分析 [股票代码]，根据巴芒和你的价值投资框架体系，帮我设计一组问题，并针对问题做一个分析报告
-                  </div>
-                </div>
+                ))}
               </div>
             </motion.div>
           )}
