@@ -60,13 +60,7 @@ export default function ChatPage() {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => {
-      const lastMessage = prev[prev.length - 1];
-      if (lastMessage && lastMessage.role === 'assistant') {
-        return [userMessage];
-      }
-      return [...prev, userMessage];
-    });
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 

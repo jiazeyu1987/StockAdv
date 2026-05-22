@@ -1,7 +1,26 @@
+import {
+  ACCOUNT_MANAGER_API_BASE_URL,
+  BACKEND_API_BASE_URL,
+  BACKEND_PROXY_ACCESS_TOKEN,
+  BACKEND_SESSION_ID,
+} from './backend';
+
+export interface BackendAssignment {
+  id?: string;
+  name?: string;
+  apiBaseUrl: string;
+  proxyAccessToken: string;
+  sessionId: string;
+}
+
 export interface UserAccount {
+  id?: string;
   username: string;
   password: string;
   dailyQueryLimit: number | null;
+  isTestUser?: boolean;
+  isAccountManagerUser?: boolean;
+  backend?: BackendAssignment;
 }
 
 export interface QueryUsage {
@@ -36,6 +55,12 @@ const getLocalDateKey = (): string => {
 
 const usageKeyFor = (username: string): string => `${QUERY_USAGE_PREFIX}:${username}`;
 
+const buildLocalBackendAssignment = (username: string): BackendAssignment => ({
+  apiBaseUrl: BACKEND_API_BASE_URL,
+  proxyAccessToken: BACKEND_PROXY_ACCESS_TOKEN,
+  sessionId: `${BACKEND_SESSION_ID}-${username}`.replace(/[^A-Za-z0-9_.:-]/g, '-').slice(0, 128),
+});
+
 const readStoredCount = (username: string, date: string): number => {
   const stored = localStorage.getItem(usageKeyFor(username));
   if (!stored) return 0;
@@ -53,13 +78,91 @@ const writeStoredCount = (username: string, date: string, count: number) => {
   localStorage.setItem(usageKeyFor(username), JSON.stringify({ date, count }));
 };
 
-export const authenticateUser = (username: string, password: string): UserAccount | null => {
+const authenticateLocalTestUser = (username: string, password: string): UserAccount | null => {
   const normalizedUsername = username.trim();
-  return (
+  const account =
     USER_ACCOUNTS.find(
-      (account) => account.username === normalizedUsername && account.password === password
-    ) || null
-  );
+      (candidate) => candidate.username === normalizedUsername && candidate.password === password
+    ) || null;
+  return account
+    ? {
+        ...account,
+        isTestUser: true,
+        backend: buildLocalBackendAssignment(account.username),
+      }
+    : null;
+};
+
+const shouldFallbackToLocalAccounts = (status: number): boolean =>
+  status === 404 || status === 502 || status === 504;
+
+const accountFromManagerPayload = (payload: any, password: string): UserAccount | null => {
+  const user = payload?.user;
+  const backend = payload?.backend;
+  if (!user?.username || !backend?.apiBaseUrl || !backend?.proxyAccessToken || !backend?.sessionId) {
+    return null;
+  }
+
+  return {
+    id: String(user.id || ''),
+    username: String(user.username),
+    password,
+    dailyQueryLimit:
+      typeof user.dailyQueryLimit === 'number' || user.dailyQueryLimit === null
+        ? user.dailyQueryLimit
+        : null,
+    isTestUser: Boolean(user.isTestUser),
+    isAccountManagerUser: true,
+    backend: {
+      id: backend.id ? String(backend.id) : undefined,
+      name: backend.name ? String(backend.name) : undefined,
+      apiBaseUrl: String(backend.apiBaseUrl).replace(/\/$/, ''),
+      proxyAccessToken: String(backend.proxyAccessToken),
+      sessionId: String(backend.sessionId),
+    },
+  };
+};
+
+export const authenticateUser = async (username: string, password: string): Promise<UserAccount | null> => {
+  const normalizedUsername = username.trim();
+  try {
+    const response = await fetch(`${ACCOUNT_MANAGER_API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: normalizedUsername, password }),
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (response.ok) {
+      return accountFromManagerPayload(await response.json(), password);
+    }
+    if (!shouldFallbackToLocalAccounts(response.status)) {
+      return null;
+    }
+  } catch {
+    return authenticateLocalTestUser(normalizedUsername, password);
+  }
+
+  return authenticateLocalTestUser(normalizedUsername, password);
+};
+
+export const createAccount = async (
+  username: string,
+  password: string,
+  dailyQueryLimit: number | null = 10
+): Promise<UserAccount | null> => {
+  const response = await fetch(`${ACCOUNT_MANAGER_API_BASE_URL}/accounts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: username.trim(), password, dailyQueryLimit }),
+    signal: AbortSignal.timeout(5000),
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return accountFromManagerPayload(await response.json(), password);
 };
 
 export const getQueryUsage = (account: UserAccount): QueryUsage => {

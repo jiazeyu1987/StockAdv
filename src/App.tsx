@@ -10,8 +10,10 @@ import MarkdownMessage from './components/MarkdownMessage';
 import {
   authenticateUser,
   canUseQuery,
+  createAccount,
   getQueryUsage,
   recordQuery,
+  type BackendAssignment,
   type QueryUsage,
   type UserAccount,
 } from './config/accounts';
@@ -35,17 +37,26 @@ function App() {
   const [streamMode, setStreamMode] = useState<'off' | 'minimal' | 'low' | 'medium' | 'high'>('medium');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authLoading, setAuthLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [authenticatedUser, setAuthenticatedUser] = useState<UserAccount | null>(null);
   const [queryUsage, setQueryUsage] = useState<QueryUsage | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  const fallbackBackend: BackendAssignment = {
+    apiBaseUrl: BACKEND_API_BASE_URL,
+    proxyAccessToken: BACKEND_PROXY_ACCESS_TOKEN,
+    sessionId: BACKEND_SESSION_ID,
+  };
+  const activeBackend = authenticatedUser?.backend || fallbackBackend;
+
   useEffect(() => {
-    if (currentView === 'chat') {
+    if (currentView === 'chat' && authenticatedUser) {
       checkHealth();
     }
-  }, [currentView]);
+  }, [currentView, authenticatedUser]);
 
   useEffect(() => {
     scrollToBottom();
@@ -57,16 +68,19 @@ function App() {
 
   const checkHealth = async () => {
     try {
-      const response = await fetch(`${BACKEND_API_BASE_URL.replace(/\/v1\/?$/, '')}/healthz`);
+      const response = await fetch(`${activeBackend.apiBaseUrl.replace(/\/v1\/?$/, '')}/healthz`);
       setIsConnected(response.status === 200);
     } catch {
       setIsConnected(false);
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const account = authenticateUser(username, password);
+    setAuthLoading(true);
+    setLoginError('');
+    const account = await authenticateUser(username, password);
+    setAuthLoading(false);
     if (!account) {
       setLoginError('用户名或密码不正确');
       return;
@@ -77,6 +91,33 @@ function App() {
     setLoginError('');
     setPassword('');
     setCurrentView('chat');
+  };
+
+  const handleCreateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 6) {
+      setLoginError('密码至少6位');
+      return;
+    }
+
+    setAuthLoading(true);
+    setLoginError('');
+    try {
+      const account = await createAccount(username, password, 10);
+      if (!account) {
+        setLoginError('注册失败，请检查用户名是否已存在');
+        return;
+      }
+
+      setAuthenticatedUser(account);
+      setQueryUsage(getQueryUsage(account));
+      setPassword('');
+      setCurrentView('chat');
+    } catch {
+      setLoginError('账号管理服务不可用，暂时无法注册');
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   const sendMessage = async () => {
@@ -108,27 +149,22 @@ function App() {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => {
-      const lastMessage = prev[prev.length - 1];
-      if (lastMessage && lastMessage.role === 'assistant') {
-        return [userMessage];
-      }
-      return [...prev, userMessage];
-    });
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${BACKEND_API_BASE_URL}/chat/completions`, {
+      const backend = authenticatedUser.backend || fallbackBackend;
+      const response = await fetch(`${backend.apiBaseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${BACKEND_PROXY_ACCESS_TOKEN}`,
+          'Authorization': `Bearer ${backend.proxyAccessToken}`,
         },
         body: JSON.stringify({
           model: 'openclaw',
           messages: [{ role: 'user', content: userMessage.content }],
-          user: BACKEND_SESSION_ID,
+          user: backend.sessionId,
           stream: false,
           reasoning_effort: streamMode,
         }),
@@ -287,7 +323,7 @@ function App() {
           </div>
           <h2 className="text-lg font-semibold text-white mb-4">用户登录</h2>
 
-          <form onSubmit={handleLogin} className="w-full space-y-3">
+          <form onSubmit={authMode === 'login' ? handleLogin : handleCreateAccount} className="w-full space-y-3">
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
               <input
@@ -311,15 +347,22 @@ function App() {
             {loginError && <p className="text-xs text-red-300">{loginError}</p>}
             <button
               type="submit"
+              disabled={authLoading}
               className="w-full py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-medium hover:from-cyan-600 hover:to-blue-600 transition-all text-sm"
             >
-              登录
+              {authLoading ? '处理中...' : authMode === 'login' ? '登录' : '注册并登录'}
             </button>
           </form>
 
           <div className="flex gap-3 mt-4">
-            <button className="px-4 py-1.5 bg-white/10 text-white rounded text-xs hover:bg-white/20 transition-colors">
-              注册
+            <button
+              onClick={() => {
+                setAuthMode(authMode === 'login' ? 'register' : 'login');
+                setLoginError('');
+              }}
+              className="px-4 py-1.5 bg-white/10 text-white rounded text-xs hover:bg-white/20 transition-colors"
+            >
+              {authMode === 'login' ? '注册' : '返回登录'}
             </button>
             <button className="px-4 py-1.5 bg-white/10 text-white rounded text-xs hover:bg-white/20 transition-colors">
               忘记密码

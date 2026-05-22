@@ -8,6 +8,8 @@ module.exports = (env, argv) => {
   const backendApiBaseUrl = process.env.STOCKADV_BACKEND_API_BASE_URL || '/api/proxy/v1';
   const backendProxyAccessToken = process.env.STOCKADV_PROXY_ACCESS_TOKEN || 'replace-with-proxy-access-token';
   const backendSessionId = process.env.STOCKADV_SESSION_ID || 'web-chat-session';
+  const accountManagerProxyTarget = process.env.STOCKADV_ACCOUNT_MANAGER_PROXY_TARGET || 'http://127.0.0.1:8090';
+  const accountManagerApiBaseUrl = process.env.STOCKADV_ACCOUNT_MANAGER_API_BASE_URL || '/api/account-manager/v1';
 
   return {
     mode: isDev ? 'development' : 'production',
@@ -85,6 +87,12 @@ module.exports = (env, argv) => {
           pathRewrite: { '^/api/proxy': '' },
           changeOrigin: true,
           secure: false
+        },
+        '/api/account-manager': {
+          target: accountManagerProxyTarget,
+          pathRewrite: { '^/api/account-manager': '' },
+          changeOrigin: true,
+          secure: false
         }
       }
     },
@@ -93,6 +101,7 @@ module.exports = (env, argv) => {
         __STOCKADV_BACKEND_API_BASE_URL__: JSON.stringify(backendApiBaseUrl),
         __STOCKADV_PROXY_ACCESS_TOKEN__: JSON.stringify(backendProxyAccessToken),
         __STOCKADV_SESSION_ID__: JSON.stringify(backendSessionId),
+        __STOCKADV_ACCOUNT_MANAGER_API_BASE_URL__: JSON.stringify(accountManagerApiBaseUrl),
       }),
       new HtmlWebpackPlugin({
         template: './index.html',

@@ -20,10 +20,14 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!authenticateUser(username, password)) {
+    setAuthLoading(true);
+    const account = await authenticateUser(username, password);
+    setAuthLoading(false);
+    if (!account) {
       setLoginError('用户名或密码不正确');
       return;
     }
@@ -103,9 +107,10 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
 
             <button
               type="submit"
+              disabled={authLoading}
               className="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-medium hover:from-cyan-600 hover:to-blue-600 transition-all"
             >
-              登录
+              {authLoading ? '处理中...' : '登录'}
             </button>
 
             <div className="flex justify-between text-sm">
