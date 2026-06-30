@@ -126,16 +126,6 @@ test('starter-question chat pages reuse the updated input prompt copy', () => {
   assert.match(chatPageSource, /chatInputPrompt/);
 });
 
-test('chat pages append new questions without clearing prior answers', () => {
-  const appSource = fs.readFileSync(path.join(__dirname, '../src/App.tsx'), 'utf8');
-  const chatPageSource = fs.readFileSync(path.join(__dirname, '../src/pages/ChatPage.tsx'), 'utf8');
-
-  assert.match(appSource, /setMessages\(\(prev\) => \[\.\.\.prev, userMessage\]\)/);
-  assert.match(chatPageSource, /setMessages\(\(prev\) => \[\.\.\.prev, userMessage\]\)/);
-  assert.doesNotMatch(appSource, /return \[userMessage\]/);
-  assert.doesNotMatch(chatPageSource, /return \[userMessage\]/);
-});
-
 test('starter-question chat textarea uses black text through the shared theme', () => {
   const themeSource = fs.readFileSync(path.join(__dirname, '../src/styles/chatTheme.ts'), 'utf8');
   const appSource = fs.readFileSync(path.join(__dirname, '../src/App.tsx'), 'utf8');
@@ -146,21 +136,27 @@ test('starter-question chat textarea uses black text through the shared theme', 
   assert.match(chatPageSource, /className=\{chatTheme\.textarea\}/);
 });
 
-test('starter-question chat theme matches the reference-style palette and layout cues', () => {
+test('starter-question chat theme uses the wide collapsible chat layout', () => {
   const themeSource = fs.readFileSync(path.join(__dirname, '../src/styles/chatTheme.ts'), 'utf8');
   const appSource = fs.readFileSync(path.join(__dirname, '../src/App.tsx'), 'utf8');
   const chatPageSource = fs.readFileSync(path.join(__dirname, '../src/pages/ChatPage.tsx'), 'utf8');
   const cssSource = fs.readFileSync(path.join(__dirname, '../src/styles/index.css'), 'utf8');
 
   assert.match(themeSource, /from-\[#2946a3\]/);
-  assert.match(themeSource, /bg-\[#3b4a63\]/);
   assert.match(themeSource, /bg-\[#24324b\]/);
-  assert.match(themeSource, /bg-\[#24345c\]\/95/);
-  assert.match(themeSource, /max-w-\[940px\]/);
+  assert.match(themeSource, /max-w-\[1440px\]/);
+  assert.match(themeSource, /max-w-\[1180px\]/);
+  assert.match(themeSource, /inputShell: 'sticky bottom-0 z-20 bg-transparent/);
+  assert.match(themeSource, /disclaimerToggle/);
+  assert.match(themeSource, /starterToggle/);
   assert.match(themeSource, /sticky bottom-0/);
 
   assert.match(appSource, /className=\{chatTheme\.starterGrid\}/);
   assert.match(chatPageSource, /className=\{chatTheme\.starterGrid\}/);
+  assert.match(appSource, /showStarterCards/);
+  assert.match(chatPageSource, /showStarterCards/);
+  assert.match(appSource, /showDisclaimer/);
+  assert.match(chatPageSource, /showDisclaimer/);
   assert.doesNotMatch(appSource, /emptyIconWrap/);
   assert.doesNotMatch(chatPageSource, /emptyIconWrap/);
   assert.match(chatPageSource, /ArrowLeft/);

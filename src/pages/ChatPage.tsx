@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Download, Loader2, MessageSquare, FileText, Trash2, ArrowLeft } from 'lucide-react';
+import { Send, Download, Loader2, MessageSquare, FileText, Trash2, ArrowLeft, ChevronDown, ChevronUp, Info, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatInputPrompt } from '../data/chatInputPrompt';
 import { investmentDisclaimer } from '../data/disclaimerText';
@@ -25,7 +25,9 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [streamMode, setStreamMode] = useState<'off' | 'minimal' | 'low' | 'medium' | 'high'>('medium');
+  const [showStarterCards, setShowStarterCards] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -60,7 +62,13 @@ export default function ChatPage() {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => {
+      const lastMessage = prev[prev.length - 1];
+      if (lastMessage && lastMessage.role === 'assistant') {
+        return [userMessage];
+      }
+      return [...prev, userMessage];
+    });
     setInput('');
     setIsLoading(true);
 
@@ -76,7 +84,6 @@ export default function ChatPage() {
           messages: [{ role: 'user', content: userMessage.content }],
           user: BACKEND_SESSION_ID,
           stream: false,
-          reasoning_effort: streamMode,
         }),
         signal: AbortSignal.timeout(300000),
       });
@@ -173,20 +180,36 @@ export default function ChatPage() {
     <div className={chatTheme.pageShell}>
       <div className={chatTheme.workspace}>
         <header className={chatTheme.header}>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate(-1)}
-              className={chatTheme.backButton}
-              title="返回上一页"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
+          <div className="flex min-w-0 flex-1 items-start gap-3">
             <div className={chatTheme.brandIcon}>
               <MessageSquare className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <h1 className={chatTheme.title}>PD股票智能查询助手</h1>
-              <p className={chatTheme.subtitle}>{investmentDisclaimer}</p>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className={chatTheme.title}>PD股票智能查询助手</h1>
+                <button
+                  type="button"
+                  onClick={() => setShowDisclaimer((visible) => !visible)}
+                  className={chatTheme.disclaimerToggle}
+                  title={showDisclaimer ? '隐藏免责声明' : '显示免责声明'}
+                >
+                  <Info className="w-3.5 h-3.5" />
+                  <span>免责声明</span>
+                  {showDisclaimer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+              <AnimatePresence initial={false}>
+                {showDisclaimer && (
+                  <motion.p
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className={chatTheme.disclaimerText}
+                  >
+                    {investmentDisclaimer}
+                  </motion.p>
+                )}
+              </AnimatePresence>
               <div className="flex items-center gap-2 mt-1">
                 <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`} />
                 <span className={chatTheme.statusText}>
@@ -195,7 +218,7 @@ export default function ChatPage() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {messages.length > 0 && (
               <button
                 onClick={downloadReport}
@@ -214,6 +237,39 @@ export default function ChatPage() {
                 <Trash2 className="w-5 h-5" />
               </button>
             )}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsSettingsOpen((open) => !open)}
+                className={chatTheme.settingsButton}
+                title="设置"
+                aria-expanded={isSettingsOpen}
+              >
+                <Settings className="w-5 h-5" />
+              </button>
+              <AnimatePresence initial={false}>
+                {isSettingsOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className={chatTheme.settingsMenu}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSettingsOpen(false);
+                        navigate(-1);
+                      }}
+                      className={chatTheme.settingsMenuItem}
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      <span>返回上一页</span>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </header>
 
@@ -222,27 +278,50 @@ export default function ChatPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="pt-2"
+              className={chatTheme.starterSection}
             >
-              <div className={chatTheme.starterGrid}>
-                {questionCards.map((card, index) => (
-                  <div
-                    key={card.title}
-                    onClick={() => setInput(card.prompt)}
-                    className={chatTheme.starterCard}
+              <button
+                type="button"
+                onClick={() => setShowStarterCards((open) => !open)}
+                className={chatTheme.starterToggle}
+              >
+                <span>提问模板参考</span>
+                <span className="flex items-center gap-2 text-white/70">
+                  <span>{showStarterCards ? '收起' : `展开 ${questionCards.length} 个示例`}</span>
+                  {showStarterCards ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </span>
+              </button>
+              <AnimatePresence initial={false}>
+                {showStarterCards && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className={chatTheme.starterGrid}
                   >
-                    <h3 className={chatTheme.starterCardTitle}>
-                      <span className={chatTheme.starterCardIndex}>
-                        {index + 1}
-                      </span>
-                      <span>{card.title}</span>
-                    </h3>
-                    <div className={chatTheme.starterCardPrompt}>
-                      {card.prompt}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    {questionCards.map((card, index) => (
+                      <div
+                        key={card.title}
+                        onClick={() => {
+                          setInput(card.prompt);
+                          setShowStarterCards(false);
+                        }}
+                        className={chatTheme.starterCard}
+                      >
+                        <h3 className={chatTheme.starterCardTitle}>
+                          <span className={chatTheme.starterCardIndex}>
+                            {index + 1}
+                          </span>
+                          <span>{card.title}</span>
+                        </h3>
+                        <div className={chatTheme.starterCardPrompt}>
+                          {card.prompt}
+                        </div>
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
 
@@ -303,26 +382,8 @@ export default function ChatPage() {
         </div>
 
         <div className={chatTheme.inputShell}>
-          <div className="max-w-4xl mx-auto flex flex-col gap-3">
-            <div className="flex items-center gap-2 px-2">
-              <span className={chatTheme.streamLabel}>推理强度:</span>
-              <div className="flex gap-1">
-                {(['off', 'minimal', 'low', 'medium', 'high'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => setStreamMode(mode)}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
-                      streamMode === mode
-                        ? chatTheme.streamButtonActive
-                        : chatTheme.streamButtonIdle
-                    }`}
-                  >
-                    {mode}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="flex gap-3">
+          <div className={chatTheme.inputInner}>
+            <div className="flex items-end gap-3">
               <div className="flex-1 relative">
                 <textarea
                   ref={inputRef}

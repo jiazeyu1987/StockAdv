@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Download, Loader2, MessageSquare, FileText, Trash2, TrendingUp, Shield, HeartPulse, Target, BarChart3, User, Lock, ArrowLeft } from 'lucide-react';
+import { Send, Download, Loader2, MessageSquare, FileText, Trash2, TrendingUp, Shield, HeartPulse, Target, BarChart3, User, Lock, ChevronDown, ChevronUp, Info, Settings, LogOut, Plus, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatInputPrompt } from './data/chatInputPrompt';
 import { investmentDisclaimer } from './data/disclaimerText';
@@ -17,6 +17,15 @@ import {
   type QueryUsage,
   type UserAccount,
 } from './config/accounts';
+import {
+  buildOpenClawSessionId,
+  createChatSession,
+  fetchChatSession,
+  fetchChatSessions,
+  toHistoryUserId,
+  type ChatSessionSummary,
+  type StoredChatMessage,
+} from './utils/sessionHistory';
 
 interface Message {
   id: string;
@@ -34,7 +43,9 @@ function App() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [streamMode, setStreamMode] = useState<'off' | 'minimal' | 'low' | 'medium' | 'high'>('medium');
+  const [showStarterCards, setShowStarterCards] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -42,6 +53,10 @@ function App() {
   const [loginError, setLoginError] = useState('');
   const [authenticatedUser, setAuthenticatedUser] = useState<UserAccount | null>(null);
   const [queryUsage, setQueryUsage] = useState<QueryUsage | null>(null);
+  const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -75,6 +90,104 @@ function App() {
     }
   };
 
+  const messageFromStored = (message: StoredChatMessage): Message => {
+    const hasFileMarker = message.content.includes('[FILE:') || message.content.includes('下载文件');
+    return {
+      id: message.id,
+      role: message.role,
+      content: message.content,
+      timestamp: new Date(message.createdAt),
+      hasFile: hasFileMarker,
+      fileUrl: hasFileMarker ? extractFileUrl(message.content) : undefined,
+      fileName: hasFileMarker ? extractFileName(message.content) : undefined,
+    };
+  };
+
+  const summaryFromSession = (session: { id: string; title: string; createdAt: string; updatedAt: string; messages: StoredChatMessage[] }): ChatSessionSummary => ({
+    id: session.id,
+    title: session.title,
+    createdAt: session.createdAt,
+    updatedAt: session.updatedAt,
+    messageCount: session.messages.length,
+  });
+
+  const refreshSessionList = async (account: UserAccount) => {
+    const backend = account.backend || fallbackBackend;
+    const historyUserId = toHistoryUserId(account.username);
+    const nextSessions = await fetchChatSessions(backend, historyUserId);
+    setSessions(nextSessions);
+  };
+
+  const loadSessionMessages = async (sessionId: string, accountOverride?: UserAccount) => {
+    const account = accountOverride || authenticatedUser;
+    if (!account || isLoading) return;
+
+    const backend = account.backend || fallbackBackend;
+    const historyUserId = toHistoryUserId(account.username);
+    setHistoryError('');
+    try {
+      const session = await fetchChatSession(backend, historyUserId, sessionId);
+      setActiveSessionId(session.id);
+      setMessages(session.messages.map(messageFromStored));
+    } catch {
+      setHistoryError('会话读取失败，请稍后再试');
+    }
+  };
+
+  const createAndActivateSession = async (accountOverride?: UserAccount, title = '新对话'): Promise<string | null> => {
+    const account = accountOverride || authenticatedUser;
+    if (!account) return null;
+
+    const backend = account.backend || fallbackBackend;
+    const historyUserId = toHistoryUserId(account.username);
+    setHistoryError('');
+    try {
+      const session = await createChatSession(backend, historyUserId, title);
+      setSessions((prev) => [summaryFromSession(session), ...prev.filter((item) => item.id !== session.id)]);
+      setActiveSessionId(session.id);
+      setMessages([]);
+      return session.id;
+    } catch {
+      setHistoryError('新建会话失败，请稍后再试');
+      return null;
+    }
+  };
+
+  const loadUserSessions = async (account: UserAccount) => {
+    const backend = account.backend || fallbackBackend;
+    const historyUserId = toHistoryUserId(account.username);
+    setIsHistoryLoading(true);
+    setHistoryError('');
+    try {
+      const nextSessions = await fetchChatSessions(backend, historyUserId);
+      if (nextSessions.length === 0) {
+        const session = await createChatSession(backend, historyUserId, '新对话');
+        setSessions([summaryFromSession(session)]);
+        setActiveSessionId(session.id);
+        setMessages([]);
+        return;
+      }
+
+      setSessions(nextSessions);
+      const latest = nextSessions[0];
+      setActiveSessionId(latest.id);
+      const session = await fetchChatSession(backend, historyUserId, latest.id);
+      setMessages(session.messages.map(messageFromStored));
+    } catch {
+      setSessions([]);
+      setActiveSessionId(null);
+      setMessages([]);
+      setHistoryError('会话历史加载失败，请刷新或重新登录');
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  };
+
+  const ensureActiveSession = async (account: UserAccount, firstMessage: string): Promise<string | null> => {
+    if (activeSessionId) return activeSessionId;
+    return createAndActivateSession(account, firstMessage);
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthLoading(true);
@@ -91,6 +204,7 @@ function App() {
     setLoginError('');
     setPassword('');
     setCurrentView('chat');
+    void loadUserSessions(account);
   };
 
   const handleCreateAccount = async (e: React.FormEvent) => {
@@ -113,6 +227,7 @@ function App() {
       setQueryUsage(getQueryUsage(account));
       setPassword('');
       setCurrentView('chat');
+      void loadUserSessions(account);
     } catch {
       setLoginError('账号管理服务不可用，暂时无法注册');
     } finally {
@@ -140,12 +255,16 @@ function App() {
       return;
     }
 
+    const promptText = input.trim();
+    const currentSessionId = await ensureActiveSession(authenticatedUser, promptText);
+    if (!currentSessionId) return;
+
     setQueryUsage(recordQuery(authenticatedUser));
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input.trim(),
+      content: promptText,
       timestamp: new Date(),
     };
 
@@ -155,6 +274,7 @@ function App() {
 
     try {
       const backend = authenticatedUser.backend || fallbackBackend;
+      const historyUserId = toHistoryUserId(authenticatedUser.username);
       const response = await fetch(`${backend.apiBaseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -164,9 +284,12 @@ function App() {
         body: JSON.stringify({
           model: 'openclaw',
           messages: [{ role: 'user', content: userMessage.content }],
-          user: backend.sessionId,
+          user: buildOpenClawSessionId(backend.sessionId, currentSessionId),
+          metadata: {
+            history_user_id: historyUserId,
+            history_session_id: currentSessionId,
+          },
           stream: false,
-          reasoning_effort: streamMode,
         }),
         signal: AbortSignal.timeout(300000),
       });
@@ -193,6 +316,7 @@ function App() {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+      void refreshSessionList(authenticatedUser);
     } catch (error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -224,15 +348,24 @@ function App() {
   };
 
   const clearChat = () => {
-    setMessages([]);
+    void createAndActivateSession(authenticatedUser || undefined);
   };
 
   const logout = () => {
     setAuthenticatedUser(null);
     setQueryUsage(null);
+    setSessions([]);
+    setActiveSessionId(null);
+    setHistoryError('');
     setMessages([]);
     setInput('');
     setCurrentView('login');
+  };
+
+  const formatSessionDate = (value: string): string => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleDateString();
   };
 
   const downloadFile = (url: string, filename: string) => {
@@ -375,22 +508,84 @@ function App() {
 
   return (
     <div className={chatTheme.pageShell}>
-      <div className={chatTheme.workspace}>
-        <header className={chatTheme.header}>
-          <div className="flex items-center gap-3">
+      <div className={chatTheme.appFrame}>
+        <aside className={chatTheme.historyRail}>
+          <div className={chatTheme.historyHeader}>
+            <div className="flex items-center gap-2 text-sm font-semibold text-white">
+              <History className="w-4 h-4 text-amber-200" />
+              <span>会话历史</span>
+            </div>
             <button
-              onClick={logout}
-              className={chatTheme.backButton}
-              title="退出登录"
+              type="button"
+              onClick={() => void createAndActivateSession(authenticatedUser || undefined)}
+              className={chatTheme.newSessionButton}
             >
-              <ArrowLeft className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
+              <span>新建会话</span>
             </button>
+          </div>
+          {historyError && <div className={chatTheme.historyError}>{historyError}</div>}
+          <div className={chatTheme.historyList}>
+            {isHistoryLoading && (
+              <div className={chatTheme.historyState}>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>加载中...</span>
+              </div>
+            )}
+            {!isHistoryLoading && sessions.length === 0 && (
+              <div className={chatTheme.historyState}>暂无会话</div>
+            )}
+            {!isHistoryLoading && sessions.map((session) => (
+              <button
+                key={session.id}
+                type="button"
+                onClick={() => void loadSessionMessages(session.id)}
+                className={`${chatTheme.historyItem} ${
+                  activeSessionId === session.id ? chatTheme.historyItemActive : ''
+                }`}
+              >
+                <span className={chatTheme.historyItemTitle}>{session.title}</span>
+                <span className={chatTheme.historyItemMeta}>
+                  {formatSessionDate(session.updatedAt)}
+                  {session.messageCount > 0 ? ` · ${session.messageCount} 条` : ''}
+                </span>
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        <div className={chatTheme.workspace}>
+        <header className={chatTheme.header}>
+          <div className="flex min-w-0 flex-1 items-start gap-3">
             <div className={chatTheme.brandIcon}>
               <MessageSquare className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <h1 className={chatTheme.title}>PD股票智能查询助手</h1>
-              <p className={chatTheme.subtitle}>{investmentDisclaimer}</p>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className={chatTheme.title}>PD股票智能查询助手</h1>
+                <button
+                  type="button"
+                  onClick={() => setShowDisclaimer((visible) => !visible)}
+                  className={chatTheme.disclaimerToggle}
+                  title={showDisclaimer ? '隐藏免责声明' : '显示免责声明'}
+                >
+                  <Info className="w-3.5 h-3.5" />
+                  <span>免责声明</span>
+                  {showDisclaimer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+              <AnimatePresence initial={false}>
+                {showDisclaimer && (
+                  <motion.p
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className={chatTheme.disclaimerText}
+                  >
+                    {investmentDisclaimer}
+                  </motion.p>
+                )}
+              </AnimatePresence>
               <div className="flex items-center gap-2 mt-1">
                 <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`} />
                 <span className={chatTheme.statusText}>
@@ -404,7 +599,7 @@ function App() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {messages.length > 0 && (
               <button
                 onClick={downloadReport}
@@ -423,6 +618,39 @@ function App() {
                 <Trash2 className="w-5 h-5" />
               </button>
             )}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsSettingsOpen((open) => !open)}
+                className={chatTheme.settingsButton}
+                title="设置"
+                aria-expanded={isSettingsOpen}
+              >
+                <Settings className="w-5 h-5" />
+              </button>
+              <AnimatePresence initial={false}>
+                {isSettingsOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className={chatTheme.settingsMenu}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSettingsOpen(false);
+                        logout();
+                      }}
+                      className={chatTheme.settingsMenuItemDanger}
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>退出登录</span>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </header>
 
@@ -431,27 +659,50 @@ function App() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="pt-2"
+              className={chatTheme.starterSection}
             >
-              <div className={chatTheme.starterGrid}>
-                {questionCards.map((card, index) => (
-                  <div
-                    key={card.title}
-                    onClick={() => setInput(card.prompt)}
-                    className={chatTheme.starterCard}
+              <button
+                type="button"
+                onClick={() => setShowStarterCards((open) => !open)}
+                className={chatTheme.starterToggle}
+              >
+                <span>提问模板参考</span>
+                <span className="flex items-center gap-2 text-white/70">
+                  <span>{showStarterCards ? '收起' : `展开 ${questionCards.length} 个示例`}</span>
+                  {showStarterCards ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </span>
+              </button>
+              <AnimatePresence initial={false}>
+                {showStarterCards && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className={chatTheme.starterGrid}
                   >
-                    <h3 className={chatTheme.starterCardTitle}>
-                      <span className={chatTheme.starterCardIndex}>
-                        {index + 1}
-                      </span>
-                      <span>{card.title}</span>
-                    </h3>
-                    <div className={chatTheme.starterCardPrompt}>
-                      {card.prompt}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    {questionCards.map((card, index) => (
+                      <div
+                        key={card.title}
+                        onClick={() => {
+                          setInput(card.prompt);
+                          setShowStarterCards(false);
+                        }}
+                        className={chatTheme.starterCard}
+                      >
+                        <h3 className={chatTheme.starterCardTitle}>
+                          <span className={chatTheme.starterCardIndex}>
+                            {index + 1}
+                          </span>
+                          <span>{card.title}</span>
+                        </h3>
+                        <div className={chatTheme.starterCardPrompt}>
+                          {card.prompt}
+                        </div>
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
 
@@ -512,26 +763,8 @@ function App() {
         </div>
 
         <div className={chatTheme.inputShell}>
-          <div className="max-w-4xl mx-auto flex flex-col gap-3">
-            <div className="flex items-center gap-2 px-2">
-              <span className={chatTheme.streamLabel}>推理强度:</span>
-              <div className="flex gap-1">
-                {(['off', 'minimal', 'low', 'medium', 'high'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => setStreamMode(mode)}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
-                      streamMode === mode
-                        ? chatTheme.streamButtonActive
-                        : chatTheme.streamButtonIdle
-                    }`}
-                  >
-                    {mode}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="flex gap-3">
+          <div className={chatTheme.inputInner}>
+            <div className="flex items-end gap-3">
               <div className="flex-1 relative">
                 <textarea
                   ref={inputRef}
@@ -555,6 +788,7 @@ function App() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
